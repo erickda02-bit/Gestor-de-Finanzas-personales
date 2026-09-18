@@ -65,8 +65,8 @@
 
                 <div class="flex items-center gap-3">
                     <button id="btnResetData" class="px-3 py-1.5 text-xs text-red-400 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 rounded-lg transition-colors flex items-center gap-1.5">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                        <span>Reiniciar Datos</span>
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Limpiar Todo</span>
                     </button>
                 </div>
             </div>
@@ -352,16 +352,8 @@
             egreso: ['Vivienda / Renta', 'Alimentación / Súper', 'Servicios Básicos', 'Transporte', 'Entretenimiento / Ocio', 'Fondo de Emergencia', 'Inversión', 'Deudas / Tarjetas', 'Otros Gastos']
         };
 
-        const INITIAL_DATA = [
-            { id: '1', tipo: 'ingreso', categoria: 'Salario / Nómina', monto: 2500, descripcion: 'Sueldo Mensual Principal', fecha: new Date().toISOString() },
-            { id: '2', tipo: 'ingreso', categoria: 'Freelance', monto: 450, descripcion: 'Proyecto Web Cliente', fecha: new Date().toISOString() },
-            { id: '3', tipo: 'egreso', categoria: 'Vivienda / Renta', monto: 800, descripcion: 'Renta del Departamento', fecha: new Date().toISOString() },
-            { id: '4', tipo: 'egreso', categoria: 'Alimentación / Súper', monto: 450, descripcion: 'Súper Quincenal', fecha: new Date().toISOString() },
-            { id: '5', tipo: 'egreso', categoria: 'Servicios Básicos', monto: 120, descripcion: 'Luz, Agua e Internet', fecha: new Date().toISOString() },
-            { id: '6', tipo: 'egreso', categoria: 'Entretenimiento / Ocio', monto: 150, descripcion: 'Cine y salidas', fecha: new Date().toISOString() },
-            { id: '7', tipo: 'egreso', categoria: 'Fondo de Emergencia', monto: 300, descripcion: 'Ahorro mensual seguro', fecha: new Date().toISOString() },
-            { id: '8', tipo: 'egreso', categoria: 'Inversión', monto: 200, descripcion: 'Aporte a ETF / Cetes', fecha: new Date().toISOString() }
-        ];
+        // Iniciar completamente vacío
+        const INITIAL_DATA = [];
 
         let transacciones = [];
         let filtroActual = 'todos';
@@ -386,10 +378,10 @@
                 try {
                     transacciones = JSON.parse(dataGuardada);
                 } catch (e) {
-                    transacciones = [...INITIAL_DATA];
+                    transacciones = [];
                 }
             } else {
-                transacciones = [...INITIAL_DATA];
+                transacciones = [];
                 guardarDatos();
             }
         }
@@ -470,10 +462,10 @@
                 });
             });
 
-            // Reset Data
+            // Reset / Clear Data
             document.getElementById('btnResetData').addEventListener('click', () => {
-                if (confirm('¿Estás seguro de que deseas reiniciar todos los datos a la muestra inicial?')) {
-                    transacciones = [...INITIAL_DATA];
+                if (confirm('¿Estás seguro de que deseas borrar TODAS las transacciones y comenzar desde cero ($0.00)?')) {
+                    transacciones = [];
                     guardarDatos();
                     actualizarInterfaz();
                 }
