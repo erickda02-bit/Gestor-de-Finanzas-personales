@@ -1,0 +1,957 @@
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor Financiero 50-30-20</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontInter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                    <i class="fa-solid fa-brain text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">IntelligentOps</span>
+                        <span class="text-slate-300">|</span>
+                        <h1 class="font-bold text-slate-900 text-base leading-snug">Smart Wealth Management</h1>
+                    </div>
+                    <p class="text-xs text-slate-500">Gestión inteligente de ingresos, gastos e inversión (Método 50-30-20)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="openModal('transactionModal')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-xl text-sm transition-all shadow-sm shadow-indigo-100 flex items-center space-x-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Nueva Transacción</span>
+                </button>
+                <button onclick="openModal('categoriesModal')" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 rounded-xl text-sm transition-all flex items-center space-x-2">
+                    <i class="fa-solid fa-tags text-slate-500"></i>
+                    <span class="hidden md:inline">Categorías</span>
+                </button>
+                <button onclick="resetData()" title="Reiniciar datos de prueba" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg transition-colors">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Notification Banner / Alerts -->
+        <div id="alertContainer" class="hidden"></div>
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Balance Total -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Balance Neto</p>
+                    <h3 id="kpiNetBalance" class="text-2xl font-bold text-slate-900 mt-1">$0.00</h3>
+                    <p id="kpiNetSub" class="text-xs text-slate-500 mt-1">Ingresos vs Egresos</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                </div>
+            </div>
+
+            <!-- Ingresos -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Ingresos Totales</p>
+                    <h3 id="kpiIncome" class="text-2xl font-bold text-emerald-600 mt-1">$0.00</h3>
+                    <p class="text-xs text-emerald-600 mt-1 flex items-center"><i class="fa-solid fa-arrow-trend-up mr-1"></i> Entradas de dinero</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-arrow-down"></i>
+                </div>
+            </div>
+
+            <!-- Egresos -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Egresos Totales</p>
+                    <h3 id="kpiExpenses" class="text-2xl font-bold text-rose-600 mt-1">$0.00</h3>
+                    <p class="text-xs text-rose-600 mt-1 flex items-center"><i class="fa-solid fa-arrow-trend-down mr-1"></i> Salidas de dinero</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-arrow-up"></i>
+                </div>
+            </div>
+
+            <!-- Tasa de Ahorro / Inversión -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Ahorro / Inversión</p>
+                    <h3 id="kpiSavingsRate" class="text-2xl font-bold text-indigo-600 mt-1">0%</h3>
+                    <p id="kpiSavingsSub" class="text-xs text-slate-500 mt-1">Meta sugerida: 20%</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-piggy-bank"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule 50-30-20 Analyzer Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 mb-6 gap-2">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i> Método 50 - 30 - 20
+                    </h2>
+                    <p class="text-sm text-slate-500">Evaluación de tus gastos en base a tus ingresos totales</p>
+                </div>
+                <span id="ruleStatusBadge" class="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full">Calculando...</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Needs / 50% -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/60">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-sm text-slate-700 flex items-center">
+                            <i class="fa-solid fa-house-chimney text-blue-500 mr-2"></i> Necesidades (50%)
+                        </span>
+                        <span id="needsPercent" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-2">
+                        <span id="needsActual">$0.00 gastados</span>
+                        <span id="needsTarget">Meta máx: $0.00</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="needsProgressBar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Wants / 30% -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/60">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-sm text-slate-700 flex items-center">
+                            <i class="fa-solid fa-champagne-glasses text-amber-500 mr-2"></i> Deseos (30%)
+                        </span>
+                        <span id="wantsPercent" class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-2">
+                        <span id="wantsActual">$0.00 gastados</span>
+                        <span id="wantsTarget">Meta máx: $0.00</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="wantsProgressBar" class="bg-amber-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Savings / 20% -->
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/60">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-semibold text-sm text-slate-700 flex items-center">
+                            <i class="fa-solid fa-seedling text-emerald-500 mr-2"></i> Ahorro e Inversión (20%)
+                        </span>
+                        <span id="savingsPercent" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">0%</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mb-2">
+                        <span id="savingsActual">$0.00 guardados</span>
+                        <span id="savingsTarget">Meta min: $0.00</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="savingsProgressBar" class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid: Charts & Investment Module -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Charts Section (2 cols) -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                        <i class="fa-solid fa-chart-line text-indigo-600 mr-2"></i> Análisis Visual
+                    </h2>
+                    <div class="flex space-x-2">
+                        <button onclick="switchChartTab('category')" id="btnChartCategory" class="text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium transition-all">Por Categoría</button>
+                        <button onclick="switchChartTab('rule')" id="btnChartRule" class="text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-all">Regla 50/30/20</button>
+                    </div>
+                </div>
+                <div class="relative flex-grow flex items-center justify-center min-h-[300px]">
+                    <canvas id="mainChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Savings & Investment Tracker (1 col) -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                            <i class="fa-solid fa-chart-pie text-emerald-600 mr-2"></i> Ahorro e Inversión
+                        </h2>
+                        <button onclick="openModal('investmentModal')" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2.5 py-1.5 rounded-lg font-medium transition-all flex items-center space-x-1">
+                            <i class="fa-solid fa-pen"></i> <span>Actualizar</span>
+                        </button>
+                    </div>
+
+                    <p class="text-xs text-slate-500 mb-4">Indica cuánto capital tienes invertido o ahorrado por semana o acumulado, junto con su rendimiento actual.</p>
+
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                            <p class="text-xs text-slate-500">Monto Capital Inicial / Aportado</p>
+                            <h4 id="invPrincipal" class="text-xl font-bold text-slate-800 mt-0.5">$0.00</h4>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                            <p class="text-xs text-slate-500">Valor Actual de Inversión</p>
+                            <h4 id="invCurrentValue" class="text-xl font-bold text-emerald-600 mt-0.5">$0.00</h4>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs text-slate-500">Ganancia / Rendimiento</p>
+                                <h4 id="invProfit" class="text-xl font-bold text-indigo-600 mt-0.5">$0.00</h4>
+                            </div>
+                            <div class="text-right">
+                                <span id="invROI" class="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-sm rounded-lg">+0.00%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-400 text-center">
+                    Cálculo automático de rentabilidad financiera
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction List Section -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-4 border-b border-slate-100 gap-4 mb-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center">
+                    <i class="fa-solid fa-list text-indigo-600 mr-2"></i> Historial de Transacciones
+                </h2>
+                <!-- Filters -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="fa-solid fa-search text-xs"></i>
+                        </span>
+                        <input type="text" id="filterSearch" oninput="renderTransactions()" placeholder="Buscar etiqueta o descripción..." class="pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-48">
+                    </div>
+                    <select id="filterType" onchange="renderTransactions()" class="py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">Todos los tipos</option>
+                        <option value="ingreso">Ingresos</option>
+                        <option value="egreso">Egresos</option>
+                    </select>
+                    <select id="filterCategory" onchange="renderTransactions()" class="py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">Todas las categorías</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-100 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <th class="py-3 px-4">Fecha</th>
+                            <th class="py-3 px-4">Tipo</th>
+                            <th class="py-3 px-4">Categoría</th>
+                            <th class="py-3 px-4">Descripción / Etiqueta</th>
+                            <th class="py-3 px-4 text-right">Monto</th>
+                            <th class="py-3 px-4 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Empty state -->
+            <div id="emptyState" class="hidden py-12 text-center">
+                <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400 mb-3 text-lg">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <p class="text-slate-600 font-medium text-sm">No hay transacciones registradas</p>
+                <p class="text-slate-400 text-xs mt-1">Agrega tu primer ingreso o gasto usando el botón superior.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="font-semibold text-indigo-600">IntelligentOps</span>
+                <span>&copy; 2026 - Todos los derechos reservados.</span>
+            </div>
+            <div>
+                <span>Sistema de Control y Finanzas Personales 50-30-20</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+
+    <!-- Transaction Modal -->
+    <div id="transactionModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-4">
+                <h3 id="transactionModalTitle" class="font-bold text-slate-900 text-lg">Nueva Transacción</h3>
+                <button onclick="closeModal('transactionModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="transactionForm" onsubmit="saveTransaction(event)" class="space-y-4">
+                <input type="hidden" id="transId">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Transacción</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" id="typeIngresoBtn" onclick="setTransType('ingreso')" class="py-2.5 px-4 rounded-xl border border-slate-200 font-medium text-xs flex items-center justify-center space-x-2 transition-all bg-emerald-50 border-emerald-500 text-emerald-700">
+                            <i class="fa-solid fa-arrow-down text-emerald-600"></i> <span>Ingreso</span>
+                        </button>
+                        <button type="button" id="typeEgresoBtn" onclick="setTransType('egreso')" class="py-2.5 px-4 rounded-xl border border-slate-200 font-medium text-xs flex items-center justify-center space-x-2 transition-all text-slate-600 hover:bg-slate-50">
+                            <i class="fa-solid fa-arrow-up text-rose-600"></i> <span>Egreso</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="transType" value="ingreso">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Monto ($)</label>
+                        <input type="number" step="0.01" id="transAmount" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha</label>
+                        <input type="date" id="transDate" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
+                    <select id="transCategory" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <!-- Populated dynamically based on 50-30-20 rule groups -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
+                    <input type="text" id="transDesc" required placeholder="Ej. Supermercado semanal" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Etiqueta / Tag (opcional)</label>
+                    <input type="text" id="transTag" placeholder="Ej. comida, casa, crypto" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('transactionModal')" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm shadow-indigo-100">Guardar Transacción</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Categories Customization Modal -->
+    <div id="categoriesModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-lg">Personalizar Categorías</h3>
+                    <p class="text-xs text-slate-500">Modifica los nombres de las categorías según tus necesidades</p>
+                </div>
+                <button onclick="closeModal('categoriesModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="categoriesListContainer" class="space-y-4 overflow-y-auto flex-grow pr-1">
+                <!-- Populated dynamically -->
+            </div>
+            <div class="flex justify-end space-x-3 pt-4 border-t border-slate-100 mt-4">
+                <button type="button" onclick="closeModal('categoriesModal')" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50">Cerrar</button>
+                <button type="button" onclick="saveCategories()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-medium shadow-sm shadow-indigo-100">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Modal -->
+    <div id="investmentModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-100 mb-4">
+                <h3 class="font-bold text-slate-900 text-lg">Ahorro e Inversión (20%)</h3>
+                <button onclick="closeModal('investmentModal')" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="investmentForm" onsubmit="saveInvestmentData(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Monto Capital Principal / Aportado ($)</label>
+                    <input type="number" step="0.01" id="invPrincipalInput" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Valor Actual en el Mercado ($)</label>
+                    <input type="number" step="0.01" id="invCurrentInput" required placeholder="0.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('investmentModal')" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium shadow-sm shadow-emerald-100">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- App Logic -->
+    <script>
+        // Default categories structured by 50-30-20 rule
+        const defaultCategories = [
+            { id: 'necesidades', name: 'Necesidades (50%)', type: 'necesidad', icon: 'fa-house-chimney', color: '#3b82f6', subcategories: ['Vivienda / Alquiler', 'Alimentos / Super', 'Servicios (Luz/Agua)', 'Salud / Seguros', 'Transporte'] },
+            { id: 'deseos', name: 'Deseos (30%)', type: 'deseo', icon: 'fa-champagne-glasses', color: '#f59e0b', subcategories: ['Entretenimiento / Salidas', 'Ropa y Accesorios', 'Suscripciones', 'Viajes / Ocio', 'Gustos personales'] },
+            { id: 'ahorro', name: 'Ahorro e Inversión (20%)', type: 'ahorro', icon: 'fa-seedling', color: '#10b981', subcategories: ['Fondo de Emergencia', 'Inversión Acciones / ETFs', 'Criptomonedas', 'Ahorro a Plazo'] }
+        ];
+
+        // App state
+        let categories = JSON.parse(localStorage.getItem('smartfin_categories')) || defaultCategories;
+        let transactions = JSON.parse(localStorage.getItem('smartfin_transactions')) || [
+            { id: '1', type: 'ingreso', amount: 2500, date: '2026-06-01', category: 'Ingreso Salario', desc: 'Sueldo mensual', tag: 'nomina' },
+            { id: '2', type: 'egreso', amount: 1000, date: '2026-06-02', category: 'Vivienda / Alquiler', desc: 'Alquiler departamento', tag: 'casa' },
+            { id: '3', type: 'egreso', amount: 400, date: '2026-06-03', category: 'Alimentos / Super', desc: 'Supermercado mensual', tag: 'comida' },
+            { id: '4', type: 'egreso', amount: 300, date: '2026-06-05', category: 'Entretenimiento / Salidas', desc: 'Cenas y salidas', tag: 'ocio' },
+            { id: '5', type: 'egreso', amount: 500, date: '2026-06-06', category: 'Fondo de Emergencia', desc: 'Ahorro semanal destinado', tag: 'ahorro' }
+        ];
+        let investmentData = JSON.parse(localStorage.getItem('smartfin_investment')) || { principal: 2500, current: 2850 };
+
+        let mainChartInstance = null;
+        let currentChartTab = 'category';
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set default date in modal to today
+            document.getElementById('transDate').valueAsDate = new Date();
+            populateCategorySelects();
+            renderAll();
+        });
+
+        // Save to LocalStorage
+        function saveData() {
+            localStorage.setItem('smartfin_categories', JSON.stringify(categories));
+            localStorage.setItem('smartfin_transactions', JSON.stringify(transactions));
+            localStorage.setItem('smartfin_investment', JSON.stringify(investmentData));
+        }
+
+        // Reset demo data
+        function resetData() {
+            if (confirm('¿Deseas restablecer los datos de ejemplo?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Modal Controls
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            if (modalId === 'categoriesModal') {
+                renderCategoriesEditor();
+            }
+            if (modalId === 'investmentModal') {
+                document.getElementById('invPrincipalInput').value = investmentData.principal;
+                document.getElementById('invCurrentInput').value = investmentData.current;
+            }
+            if (modalId === 'transactionModal') {
+                // reset form if creating new
+                if(!document.getElementById('transId').value) {
+                    document.getElementById('transactionForm').reset();
+                    document.getElementById('transDate').valueAsDate = new Date();
+                    setTransType('ingreso');
+                }
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            if(modalId === 'transactionModal') {
+                document.getElementById('transId').value = '';
+                document.getElementById('transactionModalTitle').innerText = 'Nueva Transacción';
+            }
+        }
+
+        // Transaction Type Toggle in Modal
+        function setTransType(type) {
+            document.getElementById('transType').value = type;
+            const btnIng = document.getElementById('typeIngresoBtn');
+            const btnEgr = document.getElementById('typeEgresoBtn');
+            if(type === 'ingreso') {
+                btnIng.className = "py-2.5 px-4 rounded-xl border border-emerald-500 font-medium text-xs flex items-center justify-center space-x-2 transition-all bg-emerald-50 text-emerald-700";
+                btnEgr.className = "py-2.5 px-4 rounded-xl border border-slate-200 font-medium text-xs flex items-center justify-center space-x-2 transition-all text-slate-600 hover:bg-slate-50";
+            } else {
+                btnEgr.className = "py-2.5 px-4 rounded-xl border border-rose-500 font-medium text-xs flex items-center justify-center space-x-2 transition-all bg-rose-50 text-rose-700";
+                btnIng.className = "py-2.5 px-4 rounded-xl border border-slate-200 font-medium text-xs flex items-center justify-center space-x-2 transition-all text-slate-600 hover:bg-slate-50";
+            }
+            populateCategorySelects();
+        }
+
+        // Populate category dropdowns
+        function populateCategorySelects() {
+            const select = document.getElementById('transCategory');
+            const filterSelect = document.getElementById('filterCategory');
+            const transType = document.getElementById('transType').value;
+
+            select.innerHTML = '';
+            
+            // If ingreso, we can just assign a generic "Ingresos" category or let user choose
+            if (transType === 'ingreso') {
+                let opt = document.createElement('option');
+                opt.value = 'Ingreso Salario / Extra';
+                opt.textContent = 'Ingresos Generales (Salario / Extras)';
+                select.appendChild(opt);
+            } else {
+                // For egresos, list subcategories grouped by 50-30-20 rule
+                categories.forEach(group => {
+                    let optgroup = document.createElement('optgroup');
+                    optgroup.label = group.name;
+                    group.subcategories.forEach(sub => {
+                        let opt = document.createElement('option');
+                        opt.value = sub;
+                        opt.textContent = sub;
+                        optgroup.appendChild(opt);
+                    });
+                    select.appendChild(optgroup);
+                });
+            }
+
+            // Populate filter category dropdown
+            const currentFilterVal = filterSelect.value;
+            filterSelect.innerHTML = '<option value="all">Todas las categorías</option>';
+            categories.forEach(group => {
+                group.subcategories.forEach(sub => {
+                    let opt = document.createElement('option');
+                    opt.value = sub;
+                    opt.textContent = sub;
+                    filterSelect.appendChild(opt);
+                });
+            });
+            // Also include general income
+            let optInc = document.createElement('option');
+            optInc.value = 'Ingreso Salario / Extra';
+            optInc.textContent = 'Ingresos Generales';
+            filterSelect.appendChild(optInc);
+            filterSelect.value = currentFilterVal;
+        }
+
+        // Save or Update Transaction
+        function saveTransaction(e) {
+            e.preventDefault();
+            const id = document.getElementById('transId').value || Date.now().toString();
+            const type = document.getElementById('transType').value;
+            const amount = parseFloat(document.getElementById('transAmount').value);
+            const date = document.getElementById('transDate').value;
+            const category = document.getElementById('transCategory').value;
+            const desc = document.getElementById('transDesc').value;
+            const tag = document.getElementById('transTag').value.trim() || 'general';
+
+            const newTrans = { id, type, amount, date, category, desc, tag };
+
+            const existingIndex = transactions.findIndex(t => t.id === id);
+            if (existingIndex >= 0) {
+                transactions[existingIndex] = newTrans;
+            } else {
+                transactions.unshift(newTrans);
+            }
+
+            saveData();
+            closeModal('transactionModal');
+            renderAll();
+        }
+
+        // Delete Transaction
+        function deleteTransaction(id) {
+            if (confirm('¿Estás seguro de eliminar esta transacción?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                saveData();
+                renderAll();
+            }
+        }
+
+        // Edit Transaction
+        function editTransaction(id) {
+            const t = transactions.find(item => item.id === id);
+            if (!t) return;
+
+            document.getElementById('transId').value = t.id;
+            setTransType(t.type);
+            document.getElementById('transAmount').value = t.amount;
+            document.getElementById('transDate').value = t.date;
+            document.getElementById('transCategory').value = t.category;
+            document.getElementById('transDesc').value = t.desc;
+            document.getElementById('transTag').value = t.tag;
+
+            document.getElementById('transactionModalTitle').innerText = 'Editar Transacción';
+            openModal('transactionModal');
+        }
+
+        // Render Categories Editor in Modal
+        function renderCategoriesEditor() {
+            const container = document.getElementById('categoriesListContainer');
+            container.innerHTML = '';
+
+            categories.forEach((group, gIndex) => {
+                let div = document.createElement('div');
+                div.className = "bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3";
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2 w-full mr-2">
+                            <i class="fa-solid ${group.icon} text-indigo-600"></i>
+                            <input type="text" value="${group.name}" id="groupName_${gIndex}" class="font-bold text-sm bg-white border border-slate-200 rounded-lg px-2 py-1 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Subcategorías (separadas por coma o gestionadas abajo):</label>
+                        <input type="text" value="${group.subcategories.join(', ')}" id="groupSubs_${gIndex}" class="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 w-full focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Save customized categories
+        function saveCategories() {
+            categories.forEach((group, gIndex) => {
+                const nameInput = document.getElementById(`groupName_${gIndex}`);
+                const subsInput = document.getElementById(`groupSubs_${gIndex}`);
+                if (nameInput) group.name = nameInput.value.trim();
+                if (subsInput) {
+                    group.subcategories = subsInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                }
+            });
+            saveData();
+            closeModal('categoriesModal');
+            populateCategorySelects();
+            renderAll();
+        }
+
+        // Save Investment Data
+        function saveInvestmentData(e) {
+            e.preventDefault();
+            investmentData.principal = parseFloat(document.getElementById('invPrincipalInput').value) || 0;
+            investmentData.current = parseFloat(document.getElementById('invCurrentInput').value) || 0;
+            saveData();
+            closeModal('investmentModal');
+            renderAll();
+        }
+
+        // Main Render Controller
+        function renderAll() {
+            renderKPIs();
+            renderRuleAnalyzer();
+            renderInvestmentModule();
+            renderTransactions();
+            renderChart();
+        }
+
+        // Render KPIs
+        function renderKPIs() {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach(t => {
+                if (t.type === 'ingreso') totalIncome += t.amount;
+                else totalExpense += t.amount;
+            });
+
+            const netBalance = totalIncome - totalExpense;
+            const savingsRate = totalIncome > 0 ? Math.max(0, (netBalance / totalIncome) * 100) : 0;
+
+            document.getElementById('kpiNetBalance').innerText = formatCurrency(netBalance);
+            document.getElementById('kpiNetBalance').className = `text-2xl font-bold mt-1 ${netBalance >= 0 ? 'text-slate-900' : 'text-rose-650'}`;
+            document.getElementById('kpiIncome').innerText = formatCurrency(totalIncome);
+            document.getElementById('kpiExpenses').innerText = formatCurrency(totalExpense);
+            document.getElementById('kpiSavingsRate').innerText = savingsRate.toFixed(1) + '%';
+        }
+
+        // Render Rule 50-30-20 Analyzer
+        function renderRuleAnalyzer() {
+            let totalIncome = transactions.filter(t => t.type === 'ingreso').reduce((acc, t) => acc + t.amount, 0);
+            
+            // Calculate totals for each group
+            let needsTotal = 0;
+            let wantsTotal = 0;
+            let savingsTotal = 0;
+
+            transactions.filter(t => t.type === 'egreso').forEach(t => {
+                if (categories[0].subcategories.includes(t.category)) {
+                    needsTotal += t.amount;
+                } else if (categories[1].subcategories.includes(t.category)) {
+                    wantsTotal += t.amount;
+                } else {
+                    // Default fallback or savings group
+                    savingsTotal += t.amount;
+                }
+            });
+
+            // Also add user investment/savings if applicable
+            let needsTarget = totalIncome * 0.50;
+            let wantsTarget = totalIncome * 0.30;
+            let savingsTarget = totalIncome * 0.20;
+
+            let needsPct = totalIncome > 0 ? (needsTotal / totalIncome) * 100 : 0;
+            let wantsPct = totalIncome > 0 ? (wantsTotal / totalIncome) * 100 : 0;
+            let savingsPct = totalIncome > 0 ? (savingsTotal / totalIncome) * 100 : 0;
+
+            // DOM Updates
+            document.getElementById('needsActual').innerText = formatCurrency(needsTotal) + ' gastados';
+            document.getElementById('needsTarget').innerText = `Meta máx: ${formatCurrency(needsTarget)}`;
+            document.getElementById('needsPercent').innerText = needsPct.toFixed(0) + '%';
+            document.getElementById('needsProgressBar').style.width = Math.min(100, (needsTotal / (needsTarget || 1)) * 100) + '%';
+            document.getElementById('needsProgressBar').className = `h-2.5 rounded-full transition-all duration-500 ${needsTotal > needsTarget && totalIncome > 0 ? 'bg-rose-500' : 'bg-blue-500'}`;
+
+            document.getElementById('wantsActual').innerText = formatCurrency(wantsTotal) + ' gastados';
+            document.getElementById('wantsTarget').innerText = `Meta máx: ${formatCurrency(wantsTarget)}`;
+            document.getElementById('wantsPercent').innerText = wantsPct.toFixed(0) + '%';
+            document.getElementById('wantsProgressBar').style.width = Math.min(100, (wantsTotal / (wantsTarget || 1)) * 100) + '%';
+            document.getElementById('wantsProgressBar').className = `h-2.5 rounded-full transition-all duration-500 ${wantsTotal > wantsTarget && totalIncome > 0 ? 'bg-rose-500' : 'bg-amber-500'}`;
+
+            document.getElementById('savingsActual').innerText = formatCurrency(savingsTotal) + ' guardados';
+            document.getElementById('savingsTarget').innerText = `Meta min: ${formatCurrency(savingsTarget)}`;
+            document.getElementById('savingsPercent').innerText = savingsPct.toFixed(0) + '%';
+            document.getElementById('savingsProgressBar').style.width = Math.min(100, (savingsTotal / (savingsTarget || 1)) * 100) + '%';
+
+            // Status Badge
+            const badge = document.getElementById('ruleStatusBadge');
+            if (totalIncome === 0) {
+                badge.innerText = 'Sin ingresos registrados';
+                badge.className = 'px-3 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full';
+            } else if (needsTotal <= needsTarget && wantsTotal <= wantsTarget) {
+                badge.innerText = '¡Excelente balance financiero!';
+                badge.className = 'px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-semibold rounded-full';
+            } else {
+                badge.innerText = 'Atención: Presupuesto excedido';
+                badge.className = 'px-3 py-1 bg-rose-100 text-rose-800 text-xs font-semibold rounded-full';
+            }
+        }
+
+        // Render Investment Module
+        function renderInvestmentModule() {
+            const principal = investmentData.principal;
+            const current = investmentData.current;
+            const profit = current - principal;
+            const roi = principal > 0 ? (profit / principal) * 100 : 0;
+
+            document.getElementById('invPrincipal').innerText = formatCurrency(principal);
+            document.getElementById('invCurrentValue').innerText = formatCurrency(current);
+            document.getElementById('invProfit').innerText = formatCurrency(profit);
+            document.getElementById('invProfit').className = `text-xl font-bold mt-0.5 ${profit >= 0 ? 'text-indigo-600' : 'text-rose-650'}`;
+            
+            const roiEl = document.getElementById('invROI');
+            roiEl.innerText = (roi >= 0 ? '+' : '') + roi.toFixed(2) + '%';
+            roiEl.className = `inline-block px-2.5 py-1 font-bold text-sm rounded-lg ${roi >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`;
+        }
+
+        // Render Transactions Table with Filters
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const searchVal = document.getElementById('filterSearch').value.toLowerCase();
+            const typeVal = document.getElementById('filterType').value;
+            const categoryVal = document.getElementById('filterCategory').value;
+
+            const filtered = transactions.filter(t => {
+                const matchesSearch = t.desc.toLowerCase().includes(searchVal) || t.tag.toLowerCase().includes(searchVal);
+                const matchesType = typeVal === 'all' || t.type === typeVal;
+                const matchesCategory = categoryVal === 'all' || t.category === categoryVal;
+                return matchesSearch && matchesType && matchesCategory;
+            });
+
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(t => {
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-colors";
+                
+                const isIncome = t.type === 'ingreso';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-xs text-slate-600 font-medium">${t.date}</td>
+                    <td class="py-3 px-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${isIncome ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">
+                            <i class="fa-solid ${isIncome ? 'fa-arrow-down text-[10px] mr-1' : 'fa-arrow-up text-[10px] mr-1'}"></i> ${t.type.toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-xs text-slate-800 font-medium">${t.category}</td>
+                    <td class="py-3 px-4">
+                        <div class="text-xs font-semibold text-slate-800">${t.desc}</div>
+                        <div class="text-[11px] text-slate-400">#${t.tag}</div>
+                    </td>
+                    <td class="py-3 px-4 text-right font-bold text-xs ${isIncome ? 'text-emerald-600' : 'text-slate-800'}">
+                        ${isIncome ? '+' : '-'}${formatCurrency(t.amount)}
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="editTransaction('${t.id}')" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors text-xs" title="Editar">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button onclick="deleteTransaction('${t.id}')" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center transition-colors text-xs" title="Eliminar">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Switch Chart Tab
+        function switchChartTab(tab) {
+            currentChartTab = tab;
+            const btnCat = document.getElementById('btnChartCategory');
+            const btnRule = document.getElementById('btnChartRule');
+
+            if (tab === 'category') {
+                btnCat.className = "text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium transition-all";
+                btnRule.className = "text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-all";
+            } else {
+                btnRule.className = "text-xs px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 font-medium transition-all";
+                btnCat.className = "text-xs px-3 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 font-medium transition-all";
+            }
+            renderChart();
+        }
+
+        // Render Chart.js
+        function renderChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+
+            if (mainChartInstance) {
+                mainChartInstance.destroy();
+            }
+
+            if (currentChartTab === 'category') {
+                // Group expenses by category
+                let categoryTotals = {};
+                transactions.filter(t => t.type === 'egreso').forEach(t => {
+                    categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
+                });
+
+                const labels = Object.keys(categoryTotals);
+                const data = Object.values(categoryTotals);
+
+                if (labels.length === 0) {
+                    // Empty chart placeholder
+                    mainChartInstance = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Sin gastos'],
+                            datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+                    return;
+                }
+
+                mainChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1', '#ec4899', '#8b5cf6', '#14b8a6'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } } }
+                        }
+                    }
+                });
+            } else {
+                // Rule 50-30-20 Comparison Chart
+                let totalIncome = transactions.filter(t => t.type === 'ingreso').reduce((acc, t) => acc + t.amount, 0);
+                let needsTotal = 0;
+                let wantsTotal = 0;
+                let savingsTotal = 0;
+
+                transactions.filter(t => t.type === 'egreso').forEach(t => {
+                    if (categories[0].subcategories.includes(t.category)) needsTotal += t.amount;
+                    else if (categories[1].subcategories.includes(t.category)) wantsTotal += t.amount;
+                    else savingsTotal += t.amount;
+                });
+
+                mainChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Necesidades (50%)', 'Deseos (30%)', 'Ahorro/Inversión (20%)'],
+                        datasets: [
+                            {
+                                label: 'Gastado / Asignado',
+                                data: [needsTotal, wantsTotal, savingsTotal],
+                                backgroundColor: ['#3b82f6', '#f59e0b', '#10b981'],
+                                borderRadius: 8
+                            },
+                            {
+                                label: 'Meta Ideal',
+                                data: [totalIncome * 0.5, totalIncome * 0.3, totalIncome * 0.2],
+                                backgroundColor: '#e2e8f0',
+                                borderRadius: 8
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Helper currency formatter
+        function formatCurrency(amount) {
+            return '$' + amount.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    </script>
+</body>
+</html>
